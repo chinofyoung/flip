@@ -33,7 +33,7 @@ interface PlayingViewProps {
     isMyTurnActive: boolean;
     isProcessing: boolean;
     isHost: boolean;
-    actionModal: { type: string; sourcePlayerId: string } | null;
+    actionModal: { type: "flip-three" | "freeze" | "second-chance-pass"; sourcePlayerId: string } | null;
     onCardSelect: (card: Card) => void;
     onRemoveCard: (cardId: string) => void;
     onStay: () => void;

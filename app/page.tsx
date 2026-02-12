@@ -74,14 +74,14 @@ function HomeContent() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full bg-emerald/3 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/3 right-1/4 w-[250px] h-[250px] rounded-full bg-gold/3 blur-[100px] pointer-events-none" />
       {/* Top bar */}
-      <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-8">
+      <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-8 relative z-10">
         <p className="text-muted text-sm">
           Welcome{user?.displayName ? `, ${user.displayName}` : ""}
         </p>
         <button
           type="button"
           onClick={handleSignOut}
-          className="px-4 py-1.5 text-xs border border-muted/30 rounded-lg text-foreground hover:bg-surface transition-colors"
+          className="px-5 py-2 text-sm font-medium border border-muted/30 rounded-xl text-foreground hover:bg-surface transition-all active:scale-95"
         >
           Sign Out
         </button>
@@ -175,33 +175,35 @@ function HomeContent() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Past Games */}
-          <motion.button
-            type="button"
-            onClick={() => router.push("/history")}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-4 text-muted font-medium hover:text-foreground transition-colors"
-          >
-            Past Games
-          </motion.button>
+          <div className="flex space-between gap-4">
+            {/* Past Games */}
+            <motion.button
+              type="button"
+              onClick={() => router.push("/history")}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 text-muted font-medium hover:text-foreground transition-colors border border-muted/30 rounded-lg"
+            >
+              Past Games
+            </motion.button>
 
-          {/* Leaderboard */}
-          <motion.button
-            type="button"
-            onClick={() => router.push("/leaderboard")}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-4 text-muted font-medium hover:text-foreground transition-colors"
-          >
-            🏆 Leaderboard
-          </motion.button>
+            {/* Leaderboard */}
+            <motion.button
+              type="button"
+              onClick={() => router.push("/leaderboard")}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 text-muted font-medium hover:text-foreground transition-colors border border-muted/30 rounded-lg"
+            >
+              🏆 Leaderboard
+            </motion.button>
+          </div>
         </div>
       </div>
     </div>

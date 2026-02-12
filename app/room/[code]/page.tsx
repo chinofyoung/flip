@@ -21,6 +21,7 @@ import {
   startGame,
   subscribeToRoom,
   getRoomByCode,
+  updateTargetScore,
 } from "@/lib/room-service";
 import {
   initializeRound,
@@ -434,6 +435,18 @@ function RoomContent() {
     }
   };
 
+  const handleUpdateTargetScore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!room || !user || !isHost) return;
+    const value = parseInt(e.target.value);
+    if (isNaN(value) || value < 1) return;
+
+    try {
+      await updateTargetScore(room.id, user.uid, value);
+    } catch (err) {
+      console.error("Error updating target score:", err);
+    }
+  };
+
   // --- Force end round (host only) ---
   const handleEndRound = async () => {
     if (!room || !user || !isHost) return;
@@ -621,16 +634,19 @@ function RoomContent() {
                   </motion.div>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                   <motion.button
                     type="button"
                     onClick={handleStay}
                     disabled={isProcessing || (myHand?.cards.length || 0) === 0 || (myHand?.pendingFlipThree || 0) > 0}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex-1 py-3 bg-emerald/20 text-emerald font-semibold rounded-lg border border-emerald/30 hover:bg-emerald/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 py-4 bg-emerald text-background font-black text-lg rounded-2xl shadow-xl shadow-emerald/10 overflow-hidden uppercase tracking-tighter italic disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
                   >
-                    <Lock className="w-4 h-4" />
-                    Lock In
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      <Lock className="w-5 h-5" />
+                      Lock In
+                    </span>
                   </motion.button>
                 </div>
               </div>
@@ -639,23 +655,32 @@ function RoomContent() {
 
           {/* Card Picker (collapsible) */}
           {isMyTurnActive && (
-            <div className="bg-surface rounded-xl border border-muted/20 overflow-hidden">
+            <div className="bg-black/40 backdrop-blur-md rounded-[2rem] border border-white/5 overflow-hidden shadow-2xl">
               <button
                 type="button"
                 onClick={() => setIsCardPickerOpen(!isCardPickerOpen)}
-                className="w-full flex items-center justify-between p-4 hover:bg-background/30 transition-colors"
+                className="w-full flex items-center justify-between px-6 py-5 hover:bg-white/5 transition-all text-left"
               >
-                <div className="flex items-center gap-2">
-                  <Hand className="w-4 h-4 text-gold" />
-                  <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                    {(myHand?.pendingFlipThree || 0) > 0 ? "Forced Draw" : "Draw Card"}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gold/10 flex items-center justify-center">
+                    <Hand className="w-4 h-4 text-gold" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em] block leading-none">
+                      Select Your
+                    </span>
+                    <span className="text-sm font-black text-foreground uppercase tracking-tight mt-0.5 block">
+                      {(myHand?.pendingFlipThree || 0) > 0 ? "Forced Reveal" : "Next Move"}
+                    </span>
+                  </div>
                 </div>
-                {isCardPickerOpen ? (
-                  <ChevronDown className="w-4 h-4 text-muted" />
-                ) : (
-                  <ChevronUp className="w-4 h-4 text-muted" />
-                )}
+                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                  {isCardPickerOpen ? (
+                    <ChevronDown className="w-4 h-4 text-muted/40" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 text-muted/40" />
+                  )}
+                </div>
               </button>
 
               <AnimatePresence>
@@ -755,101 +780,141 @@ function RoomContent() {
         onLeave={handleLeaveRoom}
       />
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="bg-surface rounded-xl border border-muted/20 p-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6">
-            Waiting for players...
-          </h2>
-
-          {/* Player List */}
-          <div className="space-y-3 mb-8">
-            <AnimatePresence mode="popLayout">
-              {room.players.map((player) => (
-                <motion.div
-                  key={player.uid}
-                  layoutId={player.uid}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center gap-4 p-4 bg-background rounded-lg border border-muted/20"
-                >
-                  {player.photoURL ? (
-                    <img
-                      src={player.photoURL}
-                      alt={player.displayName}
-                      className="w-10 h-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
-                      <span className="text-gold font-semibold">
-                        {player.displayName.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-foreground font-medium">
-                        {player.displayName}
-                      </span>
-                      {player.uid === room.hostId && (
-                        <Crown className="w-4 h-4 text-gold fill-gold" />
-                      )}
-                    </div>
-                  </div>
-
-                  {player.uid === user?.uid && (
-                    <span className="text-emerald text-sm">You</span>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
+      <div className="max-w-xl mx-auto px-6 py-12">
+        <div className="bg-black/40 backdrop-blur-xl rounded-[2rem] border border-white/5 p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Crown className="w-32 h-32" />
           </div>
 
-          {/* Host Controls */}
-          {isHost && (
-            <div className="space-y-4 mb-6">
-              <button
-                type="button"
-                onClick={handleStartGame}
-                disabled={!canStartGame || isStarting}
-                className="w-full px-6 py-4 bg-gold text-background font-bold text-lg rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isStarting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  "Start Game"
-                )}
-              </button>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-2 h-2 rounded-full bg-emerald animate-pulse shadow-[0_0_8px_rgba(45,212,160,0.8)]" />
+              <h2 className="text-[10px] font-black text-muted/60 uppercase tracking-[0.3em]">
+                Gathering the Squad
+              </h2>
+            </div>
 
-              {!canStartGame && (
-                <p className="text-center text-muted text-sm">
-                  Need at least 2 players to start
-                </p>
+            {/* Target Score Selection */}
+            <div className="mb-12 bg-white/5 border border-white/5 rounded-2xl p-6 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-muted/40 uppercase tracking-widest leading-none mb-1.5">
+                  Winning Points
+                </span>
+                <span className="text-sm font-black text-foreground uppercase tracking-tight">
+                  Threshold
+                </span>
+              </div>
+
+              {isHost ? (
+                <div className="flex items-center gap-3 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
+                  <input
+                    type="number"
+                    value={room.targetScore}
+                    onChange={handleUpdateTargetScore}
+                    min="1"
+                    className="w-16 bg-transparent border-none text-gold font-black font-mono text-xl focus:outline-none text-right"
+                  />
+                  <span className="text-[10px] font-black text-gold/40 uppercase tracking-widest">Pts</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black font-mono text-gold italic">
+                    {room.targetScore}
+                  </span>
+                  <span className="text-[10px] font-black text-gold/40 uppercase tracking-widest mt-1">Pts</span>
+                </div>
               )}
             </div>
-          )}
 
-          {/* Leave Room Button */}
-          <button
-            type="button"
-            onClick={handleLeaveRoom}
-            disabled={isLeaving}
-            className="w-full px-6 py-3 text-muted hover:text-foreground border border-muted/20 hover:border-muted/40 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isLeaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Leaving...
-              </>
-            ) : (
-              "Leave Room"
+            {/* Player List */}
+            <div className="grid grid-cols-1 gap-3 mb-12">
+              <AnimatePresence mode="popLayout">
+                {room.players.map((player, index) => (
+                  <motion.div
+                    key={player.uid}
+                    layoutId={player.uid}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-all"
+                  >
+                    {player.photoURL ? (
+                      <img
+                        src={player.photoURL}
+                        alt={player.displayName}
+                        className="w-12 h-12 rounded-full border-2 border-white/5 shadow-lg shadow-black/20"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shadow-lg shadow-black/20">
+                        <span className="text-gold font-black text-lg">
+                          {player.displayName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex-1">
+                      <span className="text-sm font-black text-foreground uppercase tracking-tight block">
+                        {player.displayName}
+                      </span>
+                      <span className="text-[10px] font-bold text-muted/40 uppercase tracking-widest leading-none">
+                        {player.uid === room.hostId ? "Room Host" : "Ready Player"}
+                      </span>
+                    </div>
+
+                    {player.uid === room.hostId && (
+                      <Crown className="w-4 h-4 text-gold drop-shadow-[0_0_8px_rgba(212,168,67,0.5)]" />
+                    )}
+
+                    {player.uid === user?.uid && (
+                      <span className="text-[10px] font-black text-emerald/40 uppercase tracking-widest">You</span>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Start Game Button (host only) */}
+            {isHost && (
+              <div className="space-y-4">
+                <motion.button
+                  type="button"
+                  onClick={handleStartGame}
+                  disabled={isStarting || room.players.length < 2}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group relative w-full py-5 bg-gold text-background font-black text-xl rounded-2xl shadow-2xl shadow-gold/20 overflow-hidden uppercase tracking-tighter italic disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {isStarting ? (
+                      <Loader2 className="animate-spin w-5 h-5" />
+                    ) : (
+                      "Ignite the Round"
+                    )}
+                  </span>
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                </motion.button>
+
+                {room.players.length < 2 && (
+                  <p className="text-center text-muted/40 text-[10px] font-black uppercase tracking-widest">
+                    Need 2+ players to start
+                  </p>
+                )}
+              </div>
             )}
-          </button>
+
+            {!isHost && (
+              <div className="bg-gold/5 border border-gold/20 rounded-2xl p-6 text-center">
+                <p className="text-gold font-black uppercase tracking-tighter italic text-lg leading-tight">
+                  Hold tight.
+                </p>
+                <p className="text-muted/60 text-[10px] font-bold uppercase tracking-widest mt-1">
+                  The host prepares the deck
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

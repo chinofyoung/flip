@@ -55,9 +55,11 @@ body {
   width: 4px;
   height: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--muted);
   border-radius: 99px;
@@ -78,27 +80,44 @@ body {
 
 /* ── Utility Animations ──────────────────────────── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(212, 168, 67, 0.2); }
-  50% { box-shadow: 0 0 20px rgba(212, 168, 67, 0.4); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(212, 168, 67, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(212, 168, 67, 0.4);
+  }
 }
 
 .animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--surface) 25%,
-    rgba(107, 124, 114, 0.15) 50%,
-    var(--surface) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--surface) 25%,
+      rgba(107, 124, 114, 0.15) 50%,
+      var(--surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
@@ -113,12 +132,10 @@ body {
 
 /* ── Skeleton Loading ────────────────────────────── */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--surface) 25%,
-    rgba(107, 124, 114, 0.08) 50%,
-    var(--surface) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--surface) 25%,
+      rgba(107, 124, 114, 0.08) 50%,
+      var(--surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 8px;
@@ -137,4 +154,10 @@ body {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.3),
     0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Game Textures ────────────────────────────────── */
+
+.bg-noise {
+  background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
 }

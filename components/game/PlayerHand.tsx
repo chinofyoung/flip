@@ -13,14 +13,16 @@ interface PlayerHandProps {
     isOwnHand?: boolean;
 }
 
-function getCardColor(card: Card) {
+function getCardStyle(card: Card, busted: boolean) {
+    const base = "relative w-12 h-16 rounded-xl bg-gradient-to-br border flex items-center justify-center font-bold text-sm shadow-lg ring-1 ring-inset ring-white/5 transition-all";
+
     switch (card.type) {
         case "number":
-            return "from-blue-500/30 to-blue-700/30 border-blue-500/40 text-blue-300";
+            return `${base} from-blue-500/10 to-blue-900/40 border-blue-500/30 text-blue-100 ${busted ? "grayscale brightness-50 border-red-900/50" : "shadow-blue-900/20"}`;
         case "modifier":
-            return "from-amber-500/30 to-amber-700/30 border-amber-500/40 text-amber-300";
+            return `${base} from-amber-500/10 to-amber-900/40 border-amber-500/30 text-amber-100 ${busted ? "grayscale brightness-50 border-red-900/50" : "shadow-amber-900/20"}`;
         case "action":
-            return "from-red-500/30 to-red-700/30 border-red-500/40 text-red-300";
+            return `${base} from-red-500/10 to-red-900/40 border-red-500/30 text-red-100 ${busted ? "grayscale brightness-50 border-red-900/50" : "shadow-red-900/20"}`;
     }
 }
 
@@ -48,34 +50,47 @@ export default function PlayerHand({
     const flipSeven = hasFlipSeven(cards);
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {/* Score Display */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <motion.span
-                        key={score}
-                        initial={{ scale: 1.3, color: "#d4a843" }}
-                        animate={{ scale: 1, color: busted ? "#ef4444" : "#f0ead6" }}
-                        className="text-3xl font-bold font-mono"
-                    >
-                        {busted ? 0 : score}
-                    </motion.span>
-                    <span className="text-muted text-sm">pts</span>
+            <div className="flex items-center justify-between bg-black/20 rounded-2xl p-4 border border-white/5 backdrop-blur-sm shadow-inner">
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-muted/40 uppercase tracking-widest mb-1">
+                        Current Points
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                        <motion.span
+                            key={score}
+                            initial={{ scale: 1.2, filter: "brightness(2)" }}
+                            animate={{
+                                scale: 1,
+                                filter: "brightness(1)",
+                                color: busted ? "#ef4444" : "#f59e0b"
+                            }}
+                            className="text-4xl font-black font-mono tracking-tighter drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                        >
+                            {busted ? 0 : score}
+                        </motion.span>
+                        <span className="text-muted/60 text-xs font-bold uppercase tracking-tight">Points</span>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col items-end gap-2">
                     {hasSecondChance && (
-                        <span className="flex items-center gap-1 px-2 py-1 bg-emerald/10 border border-emerald/20 rounded-full text-emerald text-xs font-medium">
+                        <motion.span
+                            initial={{ x: 20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-black uppercase tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                        >
                             <Shield className="w-3 h-3" />
-                            Shield
-                        </span>
+                            Shield Active
+                        </motion.span>
                     )}
 
                     {flipSeven && !busted && (
                         <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="px-2 py-1 bg-gold/20 border border-gold/30 rounded-full text-gold text-xs font-bold"
+                            initial={{ scale: 0, rotate: -5 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            className="px-3 py-1 bg-gradient-to-r from-gold/20 to-amber-500/20 border border-gold/30 rounded-full text-gold text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(212,168,67,0.2)]"
                         >
                             🎯 FLIP 7! +15
                         </motion.span>
@@ -83,17 +98,17 @@ export default function PlayerHand({
 
                     {status !== "active" && (
                         <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${status === "busted"
-                                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${status === "busted"
+                                ? "bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
                                 : status === "stayed"
-                                    ? "bg-emerald/20 text-emerald border border-emerald/30"
-                                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                                    : "bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]"
                                 }`}
                         >
                             {status === "busted"
-                                ? "BUST"
+                                ? "BUSTED"
                                 : status === "stayed"
-                                    ? "LOCKED IN"
+                                    ? "LOCKED"
                                     : "FROZEN"}
                         </span>
                     )}
@@ -101,29 +116,41 @@ export default function PlayerHand({
             </div>
 
             {/* Cards */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2 min-h-[80px]">
                 <AnimatePresence mode="popLayout">
-                    {cards.map((card) => (
+                    {cards.map((card, index) => (
                         <motion.div
                             key={card.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                            exit={{ opacity: 0, scale: 0.5, rotate: 10 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                            className={`relative w-12 h-16 rounded-lg bg-gradient-to-br border flex items-center justify-center font-bold text-sm ${getCardColor(card)} ${busted && card.type === "number" ? "ring-2 ring-red-500/50" : ""
-                                }`}
+                            initial={{ opacity: 0, y: 20, scale: 0.8, rotate: -5 }}
+                            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                            exit={{ opacity: 0, scale: 0.5, rotate: 5 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 30,
+                                delay: index * 0.05
+                            }}
+                            className={getCardStyle(card, busted)}
                         >
-                            {getCardLabel(card)}
+                            <span className="relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                {getCardLabel(card)}
+                            </span>
+
+                            {/* Texture overlay */}
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.05] pointer-events-none" />
+
+                            {/* Inner shine */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
 
                             {/* Remove button for own hand */}
                             {isOwnHand && onRemoveCard && status === "active" && (
                                 <button
                                     type="button"
                                     onClick={() => onRemoveCard(card.id)}
-                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-400 transition-colors"
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-colors z-20 shadow-lg border border-red-400/50"
                                 >
-                                    <X className="w-2.5 h-2.5 text-white" />
+                                    <X className="w-3 h-3 text-white" />
                                 </button>
                             )}
                         </motion.div>

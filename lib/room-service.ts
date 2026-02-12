@@ -221,6 +221,30 @@ export async function startGame(
 }
 
 /**
+ * Updates the target score for a room (host only)
+ */
+export async function updateTargetScore(
+  roomId: string,
+  hostId: string,
+  targetScore: number
+): Promise<void> {
+  const roomRef = doc(db, "rooms", roomId);
+  const roomSnapshot = await getDoc(roomRef);
+
+  if (!roomSnapshot.exists()) {
+    throw new Error("Room not found.");
+  }
+
+  const roomData = roomSnapshot.data() as Omit<Room, "id">;
+
+  if (roomData.hostId !== hostId) {
+    throw new Error("Only the host can update the target score.");
+  }
+
+  await updateDoc(roomRef, { targetScore });
+}
+
+/**
  * Subscribes to real-time updates for a room
  * Returns an unsubscribe function
  */

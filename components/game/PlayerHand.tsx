@@ -33,7 +33,7 @@ function getCardLabel(card: Card): string {
         return card.value as string;
     }
     if (card.value === "freeze") return "❄️";
-    if (card.value === "flip-three") return "3×";
+    if (card.value === "flip-three") return "F3";
     if (card.value === "second-chance") return "🛡️";
     return card.label;
 }
@@ -44,7 +44,8 @@ export default function PlayerHand({
     status,
     onRemoveCard,
     isOwnHand = false,
-}: PlayerHandProps) {
+    showPlayerCards = true,
+}: PlayerHandProps & { showPlayerCards?: boolean }) {
     const score = calculateScore(cards);
     const busted = isBusted(cards);
     const flipSeven = hasFlipSeven(cards);
@@ -90,7 +91,7 @@ export default function PlayerHand({
                         <motion.span
                             initial={{ scale: 0, rotate: -5 }}
                             animate={{ scale: 1, rotate: 0 }}
-                            className="px-3 py-1 bg-gradient-to-r from-gold/20 to-amber-500/20 border border-gold/30 rounded-full text-gold text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(212,168,67,0.2)]"
+                            className="px-3 py-1 bg-gradient-to-r from-gold/20 to-amber-500/20 border border-gold/30 rounded-full text-gold text-xs font-black uppercase tracking-wider shadow-[0_0_15_rgba(212,168,67,0.2)]"
                         >
                             🎯 FLIP 7! +15
                         </motion.span>
@@ -118,43 +119,55 @@ export default function PlayerHand({
             {/* Cards */}
             <div className="flex flex-wrap gap-2 min-h-[80px]">
                 <AnimatePresence mode="popLayout">
-                    {cards.map((card, index) => (
-                        <motion.div
-                            key={card.id}
-                            layout
-                            initial={{ opacity: 0, y: 20, scale: 0.8, rotate: -5 }}
-                            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-                            exit={{ opacity: 0, scale: 0.5, rotate: 5 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 30,
-                                delay: index * 0.05
-                            }}
-                            className={getCardStyle(card, busted)}
-                        >
-                            <span className="relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                {getCardLabel(card)}
-                            </span>
+                    {cards.map((card, index) => {
+                        const isNumberCard = card.type === "number";
+                        const shouldBlur = !isOwnHand && !showPlayerCards && isNumberCard;
 
-                            {/* Texture overlay */}
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.05] pointer-events-none" />
+                        return (
+                            <motion.div
+                                key={card.id}
+                                layout
+                                initial={{ opacity: 0, y: 20, scale: 0.8, rotate: -5 }}
+                                animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, rotate: 5 }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 400,
+                                    damping: 30,
+                                    delay: index * 0.05
+                                }}
+                                className={`${getCardStyle(card, busted)} ${shouldBlur ? "blur-sm opacity-60" : ""}`}
+                            >
+                                <span className={`relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] ${shouldBlur ? "invisible" : ""}`}>
+                                    {getCardLabel(card)}
+                                </span>
 
-                            {/* Inner shine */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
+                                {/* Hidden label for blurred cards */}
+                                {shouldBlur && (
+                                    <span className="absolute inset-0 flex items-center justify-center text-xs font-black opacity-40">
+                                        ?
+                                    </span>
+                                )}
 
-                            {/* Remove button for own hand */}
-                            {isOwnHand && onRemoveCard && status === "active" && (
-                                <button
-                                    type="button"
-                                    onClick={() => onRemoveCard(card.id)}
-                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-colors z-20 shadow-lg border border-red-400/50"
-                                >
-                                    <X className="w-3 h-3 text-white" />
-                                </button>
-                            )}
-                        </motion.div>
-                    ))}
+                                {/* Texture overlay */}
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.05] pointer-events-none" />
+
+                                {/* Inner shine */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
+
+                                {/* Remove button for own hand */}
+                                {isOwnHand && onRemoveCard && status === "active" && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemoveCard(card.id)}
+                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-colors z-20 shadow-lg border border-red-400/50"
+                                    >
+                                        <X className="w-3 h-3 text-white" />
+                                    </button>
+                                )}
+                            </motion.div>
+                        );
+                    })}
                 </AnimatePresence>
 
                 {cards.length === 0 && (

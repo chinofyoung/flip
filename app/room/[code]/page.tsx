@@ -22,6 +22,7 @@ import {
   subscribeToRoom,
   getRoomByCode,
   updateTargetScore,
+  updateShowPlayerCards,
 } from "@/lib/room-service";
 import {
   initializeRound,
@@ -447,6 +448,17 @@ function RoomContent() {
     }
   };
 
+  const handleShowPlayerCardsToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!room || !user || !isHost) return;
+    try {
+      await updateShowPlayerCards(room.id, user.uid, e.target.checked);
+      toast.success(`Card visibility ${e.target.checked ? "enabled" : "disabled"}`);
+    } catch (err) {
+      console.error("Error updating card visibility:", err);
+      toast.error("Failed to update card visibility");
+    }
+  };
+
   // --- Force end round (host only) ---
   const handleEndRound = async () => {
     if (!room || !user || !isHost) return;
@@ -607,13 +619,13 @@ function RoomContent() {
                 </span>
               )}
             </div>
-
             <PlayerHand
               cards={myHand?.cards || []}
               hasSecondChance={myHand?.hasSecondChance || false}
               status={myHand?.status || "active"}
               onRemoveCard={handleRemoveCard}
               isOwnHand
+              showPlayerCards={room.showPlayerCards}
             />
 
             {/* Hit / Stay buttons */}
@@ -739,11 +751,11 @@ function RoomContent() {
                         <Crown className="w-3 h-3 text-gold" />
                       )}
                     </div>
-
                     <PlayerHand
                       cards={playerHand?.cards || []}
                       hasSecondChance={playerHand?.hasSecondChance || false}
                       status={playerHand?.status || "active"}
+                      showPlayerCards={room.showPlayerCards}
                     />
                   </div>
                 );
@@ -809,7 +821,7 @@ function RoomContent() {
                 <div className="flex items-center gap-3 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
                   <input
                     type="number"
-                    value={room.targetScore}
+                    value={room.targetScore ?? 200}
                     onChange={handleUpdateTargetScore}
                     min="1"
                     className="w-16 bg-transparent border-none text-gold font-black font-mono text-xl focus:outline-none text-right"
@@ -824,6 +836,29 @@ function RoomContent() {
                   <span className="text-[10px] font-black text-gold/40 uppercase tracking-widest mt-1">Pts</span>
                 </div>
               )}
+            </div>
+
+            {/* Card Visibility Toggle */}
+            <div className="mb-8 bg-white/5 border border-white/5 rounded-2xl p-6 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-muted/40 uppercase tracking-widest leading-none mb-1.5">
+                  Privacy Setting
+                </span>
+                <span className="text-sm font-black text-foreground uppercase tracking-tight">
+                  Show Player Cards
+                </span>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={room.showPlayerCards ?? false}
+                  onChange={handleShowPlayerCardsToggle}
+                  disabled={!isHost}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald"></div>
+              </label>
             </div>
 
             {/* Player List */}

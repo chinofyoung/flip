@@ -43,6 +43,7 @@ export interface Room {
   players: RoomPlayer[];
   currentRound: number;
   targetScore: number; // default 200
+  showPlayerCards: boolean; // whether other players' cards are visible
   createdAt: number;
   cumulativeScores?: Record<string, number>; // synced for all clients
 }

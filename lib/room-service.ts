@@ -49,6 +49,7 @@ export async function createRoom(
     players: [hostPlayer],
     currentRound: 0,
     targetScore: 200,
+    showPlayerCards: true,
     createdAt: now,
   };
 
@@ -242,6 +243,30 @@ export async function updateTargetScore(
   }
 
   await updateDoc(roomRef, { targetScore });
+}
+
+/**
+ * Updates the card visibility setting for a room (host only)
+ */
+export async function updateShowPlayerCards(
+  roomId: string,
+  hostId: string,
+  showPlayerCards: boolean
+): Promise<void> {
+  const roomRef = doc(db, "rooms", roomId);
+  const roomSnapshot = await getDoc(roomRef);
+
+  if (!roomSnapshot.exists()) {
+    throw new Error("Room not found.");
+  }
+
+  const roomData = roomSnapshot.data() as Omit<Room, "id">;
+
+  if (roomData.hostId !== hostId) {
+    throw new Error("Only the host can update room settings.");
+  }
+
+  await updateDoc(roomRef, { showPlayerCards });
 }
 
 /**

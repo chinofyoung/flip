@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, X } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import type { Card } from "@/lib/firestore-schema";
 import { calculateScore, hasFlipSeven, isBusted } from "@/lib/game/scoring";
 
@@ -34,7 +34,7 @@ function getCardLabel(card: Card): string {
     }
     if (card.value === "freeze") return "❄️";
     if (card.value === "flip-three") return "F3";
-    if (card.value === "second-chance") return "🛡️";
+    if (card.value === "second-chance") return "❤️";
     return card.label;
 }
 
@@ -80,10 +80,10 @@ export default function PlayerHand({
                         <motion.span
                             initial={{ x: 20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
-                            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-black uppercase tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                            className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-pink-400 text-xs font-black uppercase tracking-wider shadow-[0_0_10px_rgba(236,72,153,0.1)]"
                         >
-                            <Shield className="w-3 h-3" />
-                            Shield Active
+                            <Heart className="w-3 h-3 fill-current" />
+                            Second Chance
                         </motion.span>
                     )}
 

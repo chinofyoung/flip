@@ -19,9 +19,9 @@ const MODIFIER_CARDS = [
 ];
 
 const ACTION_CARDS = [
-    { value: "freeze" as const, label: "Freeze", type: "action" as const },
-    { value: "flip-three" as const, label: "Flip 3", type: "action" as const },
-    { value: "second-chance" as const, label: "2nd Chance", type: "action" as const },
+    { value: "freeze" as const, label: "❄️", type: "action" as const },
+    { value: "flip-three" as const, label: "F3", type: "action" as const },
+    { value: "second-chance" as const, label: "❤️", type: "action" as const },
 ];
 
 interface CardPickerProps {
@@ -97,7 +97,7 @@ export default function CardPicker({ onCardSelect, disabled }: CardPickerProps) 
                     </h3>
                     <div className="h-px flex-1 bg-amber-500/20" />
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-7 gap-2">
                     {MODIFIER_CARDS.map((card) => (
                         <motion.button
                             key={card.value}
@@ -127,7 +127,7 @@ export default function CardPicker({ onCardSelect, disabled }: CardPickerProps) 
                     </h3>
                     <div className="h-px flex-1 bg-red-500/20" />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-7 gap-2">
                     {ACTION_CARDS.map((card) => (
                         <motion.button
                             key={card.value}

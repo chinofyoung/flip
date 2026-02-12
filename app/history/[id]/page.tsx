@@ -36,7 +36,7 @@ function getCardLabel(card: Card): string {
     }
     if (card.value === "freeze") return "❄️";
     if (card.value === "flip-three") return "3×";
-    if (card.value === "second-chance") return "🛡️";
+    if (card.value === "second-chance") return "❤️";
     return card.label;
 }
 
@@ -187,10 +187,10 @@ function GameDetailContent() {
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${index === 0
-                                            ? "bg-gold/5 border-gold/20"
-                                            : isCurrentUser
-                                                ? "bg-emerald/5 border-emerald/20"
-                                                : "bg-surface border-muted/10"
+                                        ? "bg-gold/5 border-gold/20"
+                                        : isCurrentUser
+                                            ? "bg-emerald/5 border-emerald/20"
+                                            : "bg-surface border-muted/10"
                                         }`}
                                 >
                                     {/* Rank */}
@@ -308,10 +308,10 @@ function GameDetailContent() {
                                                             </div>
                                                             <span
                                                                 className={`text-sm font-bold font-mono ${isBusted
-                                                                        ? "text-red-400"
-                                                                        : roundScore > 0
-                                                                            ? "text-emerald"
-                                                                            : "text-muted"
+                                                                    ? "text-red-400"
+                                                                    : roundScore > 0
+                                                                        ? "text-emerald"
+                                                                        : "text-muted"
                                                                     }`}
                                                             >
                                                                 {isBusted ? "BUST" : `+${roundScore}`}

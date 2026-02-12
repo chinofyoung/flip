@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Target, Shield, Snowflake } from "lucide-react";
+import { X, Target, Heart, Snowflake } from "lucide-react";
 import type { RoomPlayer } from "@/lib/firestore-schema";
 
 interface ActionCardModalProps {
@@ -33,7 +33,7 @@ export default function ActionCardModal({
         : isFreeze
             ? "Choose a player to freeze (banks their current score)"
             : "Give your Second Chance to a player (or yourself)";
-    const Icon = isFlipThree ? Target : isFreeze ? Snowflake : Shield;
+    const Icon = isFlipThree ? Target : isFreeze ? Snowflake : Heart;
 
     // All action cards: player can target self or others
     const selectablePlayers = players;
@@ -59,8 +59,10 @@ export default function ActionCardModal({
                     <div className="relative p-8 pb-4 text-center">
                         <div
                             className={`w-16 h-16 rounded-[2rem] mx-auto flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${isFlipThree
-                                ? "bg-red-500/20 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                                : "bg-emerald/20 text-emerald shadow-[0_0_20px_rgba(45,212,160,0.2)]"
+                                    ? "bg-red-500/20 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                                    : isFreeze
+                                        ? "bg-blue-500/20 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+                                        : "bg-pink-500/20 text-pink-400 shadow-[0_0_20px_rgba(236,72,153,0.2)]"
                                 }`}
                         >
                             <Icon className="w-8 h-8" />

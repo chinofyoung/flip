@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { Layout } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth-context";
 import { createRoom } from "@/lib/room-service";
+import { checkIsAdmin } from "@/lib/admin-service";
 
 export default function Home() {
   return (
@@ -22,6 +24,21 @@ function HomeContent() {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [showJoinInput, setShowJoinInput] = useState(false);
   const [roomCode, setRoomCode] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      if (!user) return;
+      try {
+        const adminStatus = await checkIsAdmin(user.uid);
+        setIsAdmin(adminStatus);
+      } catch (error) {
+        console.error("Failed to verify admin status:", error);
+      }
+    };
+
+    verifyAdmin();
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -204,6 +221,23 @@ function HomeContent() {
               🏆 Leaderboard
             </motion.button>
           </div>
+
+          {/* Admin Dashboard */}
+          {isAdmin && (
+            <motion.button
+              type="button"
+              onClick={() => router.push("/rooms")}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 text-gold/80 font-medium hover:text-gold hover:bg-gold/10 transition-colors border border-gold/20 rounded-lg flex items-center justify-center gap-2"
+            >
+              <Layout className="w-4 h-4" />
+              Admin Dashboard
+            </motion.button>
+          )}
         </div>
       </div>
     </div>

@@ -124,39 +124,7 @@ export default function LoginPage() {
             </svg>
             {isSigningIn ? "Signing in..." : "Sign in with Google"}
           </motion.button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 py-1">
-            <div className="flex-1 h-px bg-muted/20" />
-            <span className="text-xs text-muted/60 uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-muted/20" />
-          </div>
-
-          {/* Guest Sign In */}
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleGuestSignIn}
-            disabled={isSigningIn || loading}
-            className="w-full h-14 bg-transparent border-2 border-emerald/40 hover:border-emerald/60 text-foreground font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald/5"
-          >
-            {isSigningIn ? "Signing in..." : "Play as Guest"}
-          </motion.button>
         </div>
-
-        {/* Bottom note */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="text-center text-xs text-muted/60 mt-8"
-        >
-          No account needed to play as guest
-        </motion.p>
       </motion.div>
     </div>
   );

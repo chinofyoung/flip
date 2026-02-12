@@ -84,4 +84,5 @@ export interface UserProfile {
   gamesWon: number;
   totalScore: number;
   highestRoundScore: number;
+  isAdmin?: boolean;
 }

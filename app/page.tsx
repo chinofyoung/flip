@@ -1,65 +1,190 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { AuthGuard } from "@/components/AuthGuard";
+import { useAuth } from "@/lib/auth-context";
+import { createRoom } from "@/lib/room-service";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <AuthGuard>
+      <HomeContent />
+    </AuthGuard>
+  );
+}
+
+function HomeContent() {
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [showJoinInput, setShowJoinInput] = useState(false);
+  const [roomCode, setRoomCode] = useState("");
+
+  const handleCreateRoom = async () => {
+    if (!user) return;
+
+    setIsCreatingRoom(true);
+    try {
+      const room = await createRoom(
+        user.uid,
+        user.displayName || "Player",
+        user.photoURL ?? null
+      );
+      router.push(`/room/${room.code}`);
+    } catch (error) {
+      console.error("Failed to create room:", error);
+      toast.error("Failed to create room. Please try again.");
+      setIsCreatingRoom(false);
+    }
+  };
+
+  const handleJoinRoom = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = roomCode.trim().toUpperCase();
+
+    if (code.length !== 6) {
+      toast.error("Room code must be exactly 6 characters");
+      return;
+    }
+
+    router.push(`/room/${code}`);
+  };
+
+  const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase().slice(0, 6);
+    setRoomCode(value);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col p-4">
+      {/* Top bar */}
+      <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-8">
+        <p className="text-muted text-sm">
+          Welcome{user?.displayName ? `, ${user.displayName}` : ""}
+        </p>
+        <button
+          type="button"
+          onClick={signOut}
+          className="px-4 py-1.5 text-xs border border-muted/30 rounded-lg text-foreground hover:bg-surface transition-colors"
+        >
+          Sign Out
+        </button>
+      </div>
+
+      {/* Main content - centered */}
+      <div className="flex-1 flex flex-col items-center justify-center -mt-16">
+        {/* Logo */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex items-baseline justify-center gap-1 mb-12"
+        >
+          <h1 className="text-5xl font-bold tracking-tight text-foreground">
+            FLIP
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <span className="text-7xl font-bold text-gold">7</span>
+        </motion.div>
+
+        {/* Action buttons */}
+        <div className="w-full max-w-sm space-y-4">
+          {/* Create Room */}
+          <motion.button
+            type="button"
+            onClick={handleCreateRoom}
+            disabled={isCreatingRoom}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-4 bg-gold text-background font-semibold rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {isCreatingRoom ? "Creating..." : "Create Room"}
+          </motion.button>
+
+          {/* Join Room */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="space-y-3"
           >
-            Documentation
-          </a>
+            <motion.button
+              type="button"
+              onClick={() => setShowJoinInput(!showJoinInput)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 border-2 border-emerald text-emerald font-semibold rounded-lg hover:bg-emerald/10 transition-colors"
+            >
+              Join Room
+            </motion.button>
+
+            <AnimatePresence>
+              {showJoinInput && (
+                <motion.form
+                  onSubmit={handleJoinRoom}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="bg-surface rounded-lg p-4 space-y-3">
+                    <input
+                      type="text"
+                      value={roomCode}
+                      onChange={handleRoomCodeChange}
+                      placeholder="Enter room code"
+                      className="w-full px-4 py-3 bg-background border border-muted/30 rounded-lg text-foreground placeholder:text-muted/50 focus:outline-none focus:border-emerald transition-colors uppercase tracking-wider text-center font-mono text-lg"
+                      autoFocus
+                      maxLength={6}
+                    />
+                    <button
+                      type="submit"
+                      disabled={roomCode.length !== 6}
+                      className="w-full py-3 bg-emerald text-background font-semibold rounded-lg hover:bg-emerald/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Join
+                    </button>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Past Games */}
+          <motion.button
+            type="button"
+            onClick={() => router.push("/history")}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-4 text-muted font-medium hover:text-foreground transition-colors"
+          >
+            Past Games
+          </motion.button>
+
+          {/* Leaderboard */}
+          <motion.button
+            type="button"
+            onClick={() => router.push("/leaderboard")}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-4 text-muted font-medium hover:text-foreground transition-colors"
+          >
+            🏆 Leaderboard
+          </motion.button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

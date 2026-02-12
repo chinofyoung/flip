@@ -20,7 +20,7 @@ export default function RoomHeader({
     try {
       await navigator.clipboard.writeText(code);
       toast.success("Room code copied!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to copy room code");
     }
   };

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Crown, TrendingUp, LayoutGrid, LayoutList } from "lucide-react";
+import { motion } from "framer-motion";
+import { Crown, LayoutGrid, LayoutList } from "lucide-react";
 import type { Room, Round } from "@/lib/firestore-schema";
 
 interface ScoreBoardProps {

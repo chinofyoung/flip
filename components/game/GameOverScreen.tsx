@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Medal, Star, Home, RotateCcw } from "lucide-react";
 import type { Room } from "@/lib/firestore-schema";
@@ -12,6 +13,17 @@ interface GameOverScreenProps {
     onExit: () => void;
 }
 
+interface Particle {
+    id: number;
+    initialX: number;
+    rotateStart: number;
+    rotateEnd: number;
+    duration: number;
+    delay: number;
+    repeatDelay: number;
+    color: string;
+}
+
 export default function GameOverScreen({
     room,
     cumulativeScores,
@@ -19,6 +31,29 @@ export default function GameOverScreen({
     onPlayAgain,
     onExit,
 }: GameOverScreenProps) {
+    // A simple seeded random function to maintain purity
+    const seededRandom = (seed: number) => {
+        const x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+    };
+
+    // Confetti particles state - useMemo is fine if we use a deterministic seed
+    const particles = useMemo(() => {
+        // Use room.id as a seed to make it "random" but deterministic for this specific game
+        const seedValue = room.players.length + Object.keys(cumulativeScores).length;
+
+        return Array.from({ length: 20 }).map((_, i) => ({
+            id: i,
+            initialX: seededRandom(seedValue + i) * 800,
+            rotateStart: 0,
+            rotateEnd: seededRandom(seedValue + i + 100) * 360,
+            duration: 3 + seededRandom(seedValue + i + 200) * 3,
+            delay: seededRandom(seedValue + i + 300) * 2,
+            repeatDelay: seededRandom(seedValue + i + 400) * 5,
+            color: ["bg-gold", "bg-emerald", "bg-blue-400", "bg-red-400", "bg-amber-400"][i % 5],
+        }));
+    }, [room.players.length, cumulativeScores]);
+
     // Sort by final score descending
     const standings = [...room.players]
         .map((player) => ({
@@ -45,30 +80,27 @@ export default function GameOverScreen({
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
             {/* Confetti-like particles */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                {Array.from({ length: 20 }).map((_, i) => (
+                {particles.map((p: Particle) => (
                     <motion.div
-                        key={i}
+                        key={p.id}
                         initial={{
-                            x: Math.random() * (typeof window !== "undefined" ? window.innerWidth : 400),
+                            x: p.initialX,
                             y: -20,
-                            rotate: 0,
+                            rotate: p.rotateStart,
                             opacity: 1,
                         }}
                         animate={{
                             y: typeof window !== "undefined" ? window.innerHeight + 20 : 800,
-                            rotate: Math.random() * 360,
+                            rotate: p.rotateEnd,
                             opacity: 0,
                         }}
                         transition={{
-                            duration: 3 + Math.random() * 3,
-                            delay: Math.random() * 2,
+                            duration: p.duration,
+                            delay: p.delay,
                             repeat: Infinity,
-                            repeatDelay: Math.random() * 5,
+                            repeatDelay: p.repeatDelay,
                         }}
-                        className={`absolute w-3 h-3 rounded-sm ${["bg-gold", "bg-emerald", "bg-blue-400", "bg-red-400", "bg-amber-400"][
-                            i % 5
-                            ]
-                            }`}
+                        className={`absolute w-3 h-3 rounded-sm ${p.color}`}
                     />
                 ))}
             </div>
@@ -121,10 +153,10 @@ export default function GameOverScreen({
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.6 + index * 0.1 }}
                             className={`flex items-center gap-3 p-4 rounded-xl border ${index === 0
-                                    ? "bg-gold/10 border-gold/30"
-                                    : isCurrentUser
-                                        ? "bg-emerald/5 border-emerald/20"
-                                        : "bg-surface border-muted/10"
+                                ? "bg-gold/10 border-gold/30"
+                                : isCurrentUser
+                                    ? "bg-emerald/5 border-emerald/20"
+                                    : "bg-surface border-muted/10"
                                 }`}
                         >
                             {/* Rank */}

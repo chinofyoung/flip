@@ -4,7 +4,6 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   getDocs,
@@ -168,8 +167,8 @@ export async function leaveRoom(
 
     // If the leaving player was the host, transfer host to next player
     const isHostLeaving = roomData.hostId === playerId;
-    const updates: Partial<Room> = {
-      players: arrayRemove(playerToRemove) as any,
+    const updates: Record<string, unknown> = {
+      players: arrayRemove(playerToRemove),
     };
 
     if (isHostLeaving) {

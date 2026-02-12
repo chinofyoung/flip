@@ -10,26 +10,26 @@ import {
     ChevronDown,
     Crown,
 } from "lucide-react";
+import type { User } from "firebase/auth";
 import RoomHeader from "@/components/game/RoomHeader";
 import ScoreBoard from "@/components/game/ScoreBoard";
 import PlayerHand from "@/components/game/PlayerHand";
 import CardPicker from "@/components/game/CardPicker";
 import ActionCardModal from "@/components/game/ActionCardModal";
-import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import type {
     Room,
     Round,
     Card,
-    RoundSummary,
+    PlayerHand as PlayerHandType,
 } from "@/lib/firestore-schema";
 
 interface PlayingViewProps {
     code: string;
     room: Room;
     round: Round | null;
-    user: any; // User context object
+    user: User | null;
     cumulativeScores: Record<string, number>;
-    myHand: any;
+    myHand: PlayerHandType | undefined;
     isMyTurnActive: boolean;
     isProcessing: boolean;
     isHost: boolean;
@@ -160,7 +160,7 @@ export default function PlayingView({
                                 <div className="w-8 h-8 rounded-xl bg-gold/10 flex items-center justify-center">
                                     <Hand className="w-4 h-4 text-gold" />
                                 </div>
-                                <div>
+                                <div className="flex flex-col">
                                     <span className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em] block leading-none">
                                         Select Your
                                     </span>
@@ -216,12 +216,12 @@ export default function PlayingView({
                                     className="bg-surface rounded-xl border border-muted/10 p-3"
                                 >
                                     <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 rounded-full bg-muted/20 flex items-center justify-center">
+                                        <div className="w-6 h-6 rounded-full bg-muted/20 flex items-center justify-center overflow-hidden">
                                             {player.photoURL ? (
                                                 <img
                                                     src={player.photoURL}
                                                     alt=""
-                                                    className="w-6 h-6 rounded-full"
+                                                    className="w-full h-full object-cover"
                                                 />
                                             ) : (
                                                 <span className="text-xs font-semibold text-foreground">

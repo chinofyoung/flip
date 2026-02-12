@@ -7,8 +7,6 @@ import {
     deleteDoc,
     doc,
     getDoc,
-    where,
-    type DocumentData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Room, GameRecord, UserProfile } from "@/lib/firestore-schema";

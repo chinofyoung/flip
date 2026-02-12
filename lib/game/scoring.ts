@@ -1,4 +1,4 @@
-import { Card, CardType, ModifierValue } from "@/lib/firestore-schema";
+import { Card } from "@/lib/firestore-schema";
 
 /**
  * Filters hand to only number cards.

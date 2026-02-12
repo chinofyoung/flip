@@ -6,7 +6,6 @@ import {
     getDocs,
     getDoc,
     doc,
-    where,
     setDoc,
     increment,
 } from "firebase/firestore";

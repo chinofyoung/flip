@@ -2,18 +2,16 @@ import {
     doc,
     collection,
     setDoc,
-    getDoc,
     updateDoc,
     onSnapshot,
     runTransaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type {
+import {
     Room,
     Round,
     PlayerHand,
     Card,
-    PlayerStatus,
     GameRecord,
     RoundSummary,
 } from "@/lib/firestore-schema";
@@ -261,7 +259,7 @@ export async function triggerFlipThree(
             pendingFlipThree: (targetHand.pendingFlipThree || 0) + 3,
         };
 
-        const updates: Record<string, any> = {
+        const updates: Record<string, unknown> = {
             [`playerHands.${targetPlayerId}`]: updatedTargetHand,
         };
 
@@ -332,7 +330,7 @@ export async function applyFreezeToPlayer(
             status: "frozen",
         };
 
-        const updates: Record<string, any> = {
+        const updates: Record<string, unknown> = {
             [`playerHands.${targetPlayerId}`]: updatedTargetHand,
         };
 
@@ -402,7 +400,7 @@ export async function passSecondChance(
             hasSecondChance: true,
         };
 
-        const updates: Record<string, any> = {
+        const updates: Record<string, unknown> = {
             [`playerHands.${targetPlayerId}`]: updatedTargetHand,
         };
 

@@ -7,7 +7,6 @@ import {
     ArrowLeft,
     Trash2,
     RefreshCcw,
-    Users,
     History,
     Trophy,
     Layout,

@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown, Loader2 } from "lucide-react";
+import type { User } from "firebase/auth";
 import RoomHeader from "@/components/game/RoomHeader";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import type { Room } from "@/lib/firestore-schema";
@@ -8,7 +9,7 @@ import type { Room } from "@/lib/firestore-schema";
 interface LobbyViewProps {
     code: string;
     room: Room;
-    user: any; // Using any for auth user context object or specific type
+    user: User | null;
     isHost: boolean;
     canStartGame: boolean;
     isStarting: boolean;

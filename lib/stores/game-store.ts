@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Room, Round, Card, PlayerHand } from "@/lib/firestore-schema";
+import type { Room, Round } from "@/lib/firestore-schema";
 
 export type GamePhase = "lobby" | "playing" | "round-end" | "game-over";
 

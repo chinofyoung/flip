@@ -86,6 +86,11 @@ export async function addCardToHand(
         // Resolve the card draw using game actions logic
         const result = resolveCardDraw(currentHand, card);
 
+        // If player had pending forced draws from Flip Three, decrement
+        if ((currentHand.pendingFlipThree || 0) > 0) {
+            result.hand.pendingFlipThree = (currentHand.pendingFlipThree || 0) - 1;
+        }
+
         // Update the round with the new hand
         const updatedPlayerHands = {
             ...roundData.playerHands,
@@ -98,13 +103,6 @@ export async function addCardToHand(
 
         if (result.actionRequired) {
             actionRequired = result.actionRequired.type;
-        }
-
-        // If player had pending forced draws from Flip Three, decrement
-        if ((currentHand.pendingFlipThree || 0) > 0) {
-            transaction.update(roundRef, {
-                [`playerHands.${playerId}.pendingFlipThree`]: (currentHand.pendingFlipThree || 0) - 1,
-            });
         }
     });
 
@@ -228,12 +226,11 @@ export async function triggerFlipThree(
         }
 
         // Find the Flip Three card in source hand (most recent one)
-        const ftCardIndex = [...sourceHand.cards].reverse().findIndex(c => c.value === "flip-three");
-        if (ftCardIndex === -1 && sourcePlayerId !== targetPlayerId) {
+        const realIndex = sourceHand.cards.findLastIndex(c => c.value === "flip-three");
+        if (realIndex === -1) {
             throw new Error("Flip Three card not found in drawer's hand");
         }
 
-        const realIndex = sourceHand.cards.length - 1 - ftCardIndex;
         const ftCard = sourceHand.cards[realIndex];
 
         // Prepare updated source hand (remove card if not self)
@@ -298,13 +295,11 @@ export async function applyFreezeToPlayer(
         }
 
         // Find the Freeze card in source hand (most recent one)
-        const freezeCardIndex = [...sourceHand.cards].reverse().findIndex(c => c.value === "freeze");
-        if (freezeCardIndex === -1 && sourcePlayerId !== targetPlayerId) {
-            // Only throw if not freezing self (in self-freeze, the card is stays anyway)
+        const realIndex = sourceHand.cards.findLastIndex(c => c.value === "freeze");
+        if (realIndex === -1) {
             throw new Error("Freeze card not found in drawer's hand");
         }
 
-        const realIndex = sourceHand.cards.length - 1 - freezeCardIndex;
         const freezeCard = sourceHand.cards[realIndex];
 
         // Prepare updated source hand (remove card if not self)
@@ -369,12 +364,11 @@ export async function passSecondChance(
         }
 
         // Find the second chance card in source hand (most recent one)
-        const scCardIndex = [...sourceHand.cards].reverse().findIndex(c => c.value === "second-chance");
-        if (scCardIndex === -1 && sourcePlayerId !== targetPlayerId) {
+        const realIndex = sourceHand.cards.findLastIndex(c => c.value === "second-chance");
+        if (realIndex === -1) {
             throw new Error("Second Chance card not found in drawer's hand");
         }
 
-        const realIndex = sourceHand.cards.length - 1 - scCardIndex;
         const scCard = sourceHand.cards[realIndex];
 
         // Prepare updated source hand (remove card if not self)

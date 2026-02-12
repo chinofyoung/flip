@@ -101,6 +101,13 @@ export async function addCardToHand(
         if (result.actionRequired) {
             actionRequired = result.actionRequired.type;
         }
+
+        // If player had pending forced draws from Flip Three, decrement
+        if ((currentHand.pendingFlipThree || 0) > 0) {
+            transaction.update(roundRef, {
+                [`playerHands.${playerId}.pendingFlipThree`]: (currentHand.pendingFlipThree || 0) - 1,
+            });
+        }
     });
 
     return { actionRequired };
@@ -177,6 +184,10 @@ export async function playerStay(
             throw new Error("Player cannot stay (not active)");
         }
 
+        if ((currentHand.pendingFlipThree || 0) > 0) {
+            throw new Error("You must finish your forced draws before staying");
+        }
+
         const updatedHand: PlayerHand = {
             ...currentHand,
             status: "stayed",
@@ -192,48 +203,13 @@ export async function playerStay(
  * Applies Flip Three to a target player by drawing 3 cards for them.
  * The cards are provided by the caller (since physical cards are used).
  */
-export async function applyFlipThree(
-    roomId: string,
-    roundNumber: number,
-    targetPlayerId: string,
-    cards: Card[]
-): Promise<void> {
-    const roundRef = doc(db, "rooms", roomId, "rounds", roundNumber.toString());
-
-    await runTransaction(db, async (transaction) => {
-        const roundSnapshot = await transaction.get(roundRef);
-
-        if (!roundSnapshot.exists()) {
-            throw new Error("Round not found");
-        }
-
-        const roundData = roundSnapshot.data() as Round;
-        let currentHand = roundData.playerHands[targetPlayerId];
-
-        if (!currentHand) {
-            throw new Error("Target player not found");
-        }
-
-        // Apply each card one by one, resolving effects
-        for (const card of cards) {
-            if (currentHand.status !== "active") break;
-
-            const result = resolveCardDraw(currentHand, card);
-            currentHand = result.hand;
-        }
-
-        transaction.update(roundRef, {
-            [`playerHands.${targetPlayerId}`]: currentHand,
-        });
-    });
-}
-
 /**
- * Passes a Second Chance card to another player.
+ * Triggers the Flip Three effect on a target player.
  */
-export async function passSecondChance(
+export async function triggerFlipThree(
     roomId: string,
     roundNumber: number,
+    sourcePlayerId: string,
     targetPlayerId: string
 ): Promise<void> {
     const roundRef = doc(db, "rooms", roomId, "rounds", roundNumber.toString());
@@ -246,24 +222,195 @@ export async function passSecondChance(
         }
 
         const roundData = roundSnapshot.data() as Round;
+        const sourceHand = roundData.playerHands[sourcePlayerId];
         const targetHand = roundData.playerHands[targetPlayerId];
 
-        if (!targetHand) {
-            throw new Error("Target player not found");
+        if (!sourceHand || !targetHand) {
+            throw new Error("Source or target player not found");
         }
 
-        if (targetHand.hasSecondChance) {
-            throw new Error("Target already has a Second Chance");
+        // Find the Flip Three card in source hand (most recent one)
+        const ftCardIndex = [...sourceHand.cards].reverse().findIndex(c => c.value === "flip-three");
+        if (ftCardIndex === -1 && sourcePlayerId !== targetPlayerId) {
+            throw new Error("Flip Three card not found in drawer's hand");
         }
 
-        const updatedHand: PlayerHand = {
+        const realIndex = sourceHand.cards.length - 1 - ftCardIndex;
+        const ftCard = sourceHand.cards[realIndex];
+
+        // Prepare updated source hand (remove card if not self)
+        const updatedSourceCards = sourcePlayerId === targetPlayerId
+            ? sourceHand.cards
+            : sourceHand.cards.filter((_, i) => i !== realIndex);
+
+        const updatedSourceHand: PlayerHand = {
+            ...sourceHand,
+            cards: updatedSourceCards,
+            score: calculateScore(updatedSourceCards),
+        };
+
+        // Prepare updated target hand (add card if not self, and set pending)
+        const updatedTargetCards = sourcePlayerId === targetPlayerId
+            ? updatedSourceCards
+            : [...targetHand.cards, ftCard];
+
+        const updatedTargetHand: PlayerHand = {
             ...targetHand,
+            cards: updatedTargetCards,
+            score: calculateScore(updatedTargetCards),
+            pendingFlipThree: (targetHand.pendingFlipThree || 0) + 3,
+        };
+
+        const updates: Record<string, any> = {
+            [`playerHands.${targetPlayerId}`]: updatedTargetHand,
+        };
+
+        if (sourcePlayerId !== targetPlayerId) {
+            updates[`playerHands.${sourcePlayerId}`] = updatedSourceHand;
+        }
+
+        transaction.update(roundRef, updates);
+    });
+}
+
+/**
+ * Applies Freeze to a target player and moves the Freeze card from the drawer's hand to the target.
+ */
+export async function applyFreezeToPlayer(
+    roomId: string,
+    roundNumber: number,
+    sourcePlayerId: string,
+    targetPlayerId: string
+): Promise<void> {
+    const roundRef = doc(db, "rooms", roomId, "rounds", roundNumber.toString());
+
+    await runTransaction(db, async (transaction) => {
+        const roundSnapshot = await transaction.get(roundRef);
+
+        if (!roundSnapshot.exists()) {
+            throw new Error("Round not found");
+        }
+
+        const roundData = roundSnapshot.data() as Round;
+        const sourceHand = roundData.playerHands[sourcePlayerId];
+        const targetHand = roundData.playerHands[targetPlayerId];
+
+        if (!sourceHand || !targetHand) {
+            throw new Error("Source or target player not found");
+        }
+
+        // Find the Freeze card in source hand (most recent one)
+        const freezeCardIndex = [...sourceHand.cards].reverse().findIndex(c => c.value === "freeze");
+        if (freezeCardIndex === -1 && sourcePlayerId !== targetPlayerId) {
+            // Only throw if not freezing self (in self-freeze, the card is stays anyway)
+            throw new Error("Freeze card not found in drawer's hand");
+        }
+
+        const realIndex = sourceHand.cards.length - 1 - freezeCardIndex;
+        const freezeCard = sourceHand.cards[realIndex];
+
+        // Prepare updated source hand (remove card if not self)
+        const updatedSourceCards = sourcePlayerId === targetPlayerId
+            ? sourceHand.cards
+            : sourceHand.cards.filter((_, i) => i !== realIndex);
+
+        const updatedSourceHand: PlayerHand = {
+            ...sourceHand,
+            cards: updatedSourceCards,
+            score: calculateScore(updatedSourceCards),
+        };
+
+        // Prepare updated target hand (add card if not self, and set status)
+        const updatedTargetCards = sourcePlayerId === targetPlayerId
+            ? updatedSourceCards
+            : [...targetHand.cards, freezeCard];
+
+        const updatedTargetHand: PlayerHand = {
+            ...targetHand,
+            cards: updatedTargetCards,
+            score: calculateScore(updatedTargetCards),
+            status: "frozen",
+        };
+
+        const updates: Record<string, any> = {
+            [`playerHands.${targetPlayerId}`]: updatedTargetHand,
+        };
+
+        if (sourcePlayerId !== targetPlayerId) {
+            updates[`playerHands.${sourcePlayerId}`] = updatedSourceHand;
+        }
+
+        transaction.update(roundRef, updates);
+    });
+}
+
+/**
+ * Passes a Second Chance card to another player, moving the card and the effect.
+ */
+export async function passSecondChance(
+    roomId: string,
+    roundNumber: number,
+    sourcePlayerId: string,
+    targetPlayerId: string
+): Promise<void> {
+    const roundRef = doc(db, "rooms", roomId, "rounds", roundNumber.toString());
+
+    await runTransaction(db, async (transaction) => {
+        const roundSnapshot = await transaction.get(roundRef);
+
+        if (!roundSnapshot.exists()) {
+            throw new Error("Round not found");
+        }
+
+        const roundData = roundSnapshot.data() as Round;
+        const sourceHand = roundData.playerHands[sourcePlayerId];
+        const targetHand = roundData.playerHands[targetPlayerId];
+
+        if (!sourceHand || !targetHand) {
+            throw new Error("Source or target player not found");
+        }
+
+        // Find the second chance card in source hand (most recent one)
+        const scCardIndex = [...sourceHand.cards].reverse().findIndex(c => c.value === "second-chance");
+        if (scCardIndex === -1 && sourcePlayerId !== targetPlayerId) {
+            throw new Error("Second Chance card not found in drawer's hand");
+        }
+
+        const realIndex = sourceHand.cards.length - 1 - scCardIndex;
+        const scCard = sourceHand.cards[realIndex];
+
+        // Prepare updated source hand (remove card if not self)
+        const updatedSourceCards = sourcePlayerId === targetPlayerId
+            ? sourceHand.cards
+            : sourceHand.cards.filter((_, i) => i !== realIndex);
+
+        const updatedSourceHand: PlayerHand = {
+            ...sourceHand,
+            cards: updatedSourceCards,
+            score: calculateScore(updatedSourceCards),
+        };
+
+        // Prepare updated target hand (add card if not self, and set boolean)
+        const updatedTargetCards = sourcePlayerId === targetPlayerId
+            ? updatedSourceCards
+            : [...targetHand.cards, scCard];
+
+        const updatedTargetHand: PlayerHand = {
+            ...targetHand,
+            cards: updatedTargetCards,
+            score: calculateScore(updatedTargetCards),
             hasSecondChance: true,
         };
 
-        transaction.update(roundRef, {
-            [`playerHands.${targetPlayerId}`]: updatedHand,
-        });
+        const updates: Record<string, any> = {
+            [`playerHands.${targetPlayerId}`]: updatedTargetHand,
+        };
+
+        if (sourcePlayerId !== targetPlayerId) {
+            updates[`playerHands.${sourcePlayerId}`] = updatedSourceHand;
+        }
+
+        transaction.update(roundRef, updates);
     });
 }
 
@@ -308,8 +455,21 @@ export async function checkAndEndRound(
 }
 
 /**
+ * Forcefully ends the current round (host only).
+ */
+export async function forceEndRound(
+    roomId: string,
+    roundNumber: number
+): Promise<void> {
+    const roundRef = doc(db, "rooms", roomId, "rounds", roundNumber.toString());
+    await updateDoc(roundRef, {
+        isComplete: true,
+    });
+}
+
+/**
  * Ends the current round and starts the next one, or ends the game.
- * Returns cumulative scores for all players.
+ * Also stores cumulative scores in the room document for real-time sync.
  */
 export async function endRoundAndAdvance(
     roomId: string,
@@ -376,12 +536,14 @@ export async function endRoundAndAdvance(
             gameOver = true;
             transaction.update(roomRef, {
                 status: "finished",
+                cumulativeScores,
             });
         } else {
-            // Start next round
+            // Start next round — store cumulative scores in the room for all clients
             const nextRound = roundNumber + 1;
             transaction.update(roomRef, {
                 currentRound: nextRound,
+                cumulativeScores,
             });
         }
     });

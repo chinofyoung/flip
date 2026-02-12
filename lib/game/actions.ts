@@ -6,7 +6,7 @@ import { calculateScore, isBusted } from "./scoring";
  * Currently only Flip Three requires target selection.
  */
 export type ActionRequired = {
-  type: "flip-three";
+  type: "flip-three" | "freeze" | "second-chance-pass";
   sourcePlayerId?: string;
 };
 
@@ -93,9 +93,21 @@ export function resolveCardDraw(
     const actionValue = drawnCard.value as string;
 
     if (actionValue === "freeze") {
-      updatedHand = applyFreeze(updatedHand);
+      // Freeze always requires targeting (can be self or others)
+      actionRequired = {
+        type: "freeze",
+      };
     } else if (actionValue === "second-chance") {
-      updatedHand = applySecondChance(updatedHand);
+      // Second Chance: auto-apply to self if not already protected,
+      // otherwise must pass it to another player.
+      if (!updatedHand.hasSecondChance) {
+        updatedHand = applySecondChance(updatedHand);
+        actionRequired = null;
+      } else {
+        actionRequired = {
+          type: "second-chance-pass",
+        };
+      }
     } else if (actionValue === "flip-three") {
       // Flip Three requires the player to select a target
       actionRequired = {

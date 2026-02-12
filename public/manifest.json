@@ -1,0 +1,22 @@
+{
+    "name": "Flip 7 · Score Companion",
+    "short_name": "Flip 7",
+    "description": "Real-time scoring companion for the Flip 7 card game",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a0f0d",
+    "theme_color": "#0a0f0d",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

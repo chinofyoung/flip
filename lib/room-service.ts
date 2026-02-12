@@ -94,15 +94,18 @@ export async function joinRoom(
 
     const roomData = roomSnapshot.data() as Omit<Room, "id">;
 
-    // Validate room status
-    if (roomData.status !== "waiting") {
-      throw new Error("This game has already started.");
-    }
-
     // Validate player isn't already in room
     const isPlayerInRoom = roomData.players.some((p) => p.uid === player.uid);
     if (isPlayerInRoom) {
-      throw new Error("You are already in this room.");
+      // Player is already in the room, just return the data (re-joining)
+      return {
+        ...roomData,
+      };
+    }
+
+    // Validate room status for new players
+    if (roomData.status !== "waiting") {
+      throw new Error("This game has already started.");
     }
 
     // Validate room capacity

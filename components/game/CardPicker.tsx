@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { Card, ModifierValue, ActionValue } from "@/lib/firestore-schema";
+import { hapticLight } from "@/lib/haptics";
 
 // Unique card definitions for the picker (one of each type)
 const NUMBER_CARDS = Array.from({ length: 13 }, (_, i) => ({
@@ -42,6 +43,7 @@ export default function CardPicker({ onCardSelect, disabled }: CardPickerProps) 
         label: string
     ) => {
         if (disabled) return;
+        hapticLight();
 
         const card: Card = {
             id: generateCardId(type, String(value)),

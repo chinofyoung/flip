@@ -1,11 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Target, Shield } from "lucide-react";
+import { X, Target, Shield, Snowflake } from "lucide-react";
 import type { RoomPlayer } from "@/lib/firestore-schema";
 
 interface ActionCardModalProps {
-    type: "flip-three" | "second-chance-pass";
+    type: "flip-three" | "freeze" | "second-chance-pass";
     players: RoomPlayer[];
     currentUserId: string;
     onSelectPlayer: (playerId: string) => void;
@@ -22,17 +22,21 @@ export default function ActionCardModal({
     onSelf,
 }: ActionCardModalProps) {
     const isFlipThree = type === "flip-three";
-    const title = isFlipThree ? "Flip Three" : "Pass Second Chance";
+    const isFreeze = type === "freeze";
+    const title = isFlipThree
+        ? "Flip Three"
+        : isFreeze
+            ? "Freeze"
+            : "Pass Second Chance";
     const description = isFlipThree
         ? "Choose a player to draw 3 cards (or yourself)"
-        : "Give your extra Second Chance to another player";
-    const icon = isFlipThree ? Target : Shield;
-    const Icon = icon;
+        : isFreeze
+            ? "Choose a player to freeze (banks their current score)"
+            : "Give your Second Chance to a player (or yourself)";
+    const Icon = isFlipThree ? Target : isFreeze ? Snowflake : Shield;
 
-    // For Flip Three, include self option; for Second Chance pass, exclude self
-    const selectablePlayers = isFlipThree
-        ? players
-        : players.filter((p) => p.uid !== currentUserId);
+    // All action cards: player can target self or others
+    const selectablePlayers = players;
 
     return (
         <AnimatePresence>
@@ -56,8 +60,8 @@ export default function ActionCardModal({
                         <div className="flex items-center gap-3">
                             <div
                                 className={`w-10 h-10 rounded-xl flex items-center justify-center ${isFlipThree
-                                        ? "bg-red-500/20 text-red-400"
-                                        : "bg-emerald/20 text-emerald"
+                                    ? "bg-red-500/20 text-red-400"
+                                    : "bg-emerald/20 text-emerald"
                                     }`}
                             >
                                 <Icon className="w-5 h-5" />
@@ -95,8 +99,8 @@ export default function ActionCardModal({
                                         }
                                     }}
                                     className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${isSelf
-                                            ? "bg-gold/10 border border-gold/20 hover:bg-gold/20"
-                                            : "bg-background/50 hover:bg-background border border-muted/10"
+                                        ? "bg-gold/10 border border-gold/20 hover:bg-gold/20"
+                                        : "bg-background/50 hover:bg-background border border-muted/10"
                                         }`}
                                 >
                                     {/* Avatar */}

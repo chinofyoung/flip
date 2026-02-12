@@ -5,6 +5,7 @@ export type GamePhase = "lobby" | "playing" | "round-end" | "game-over";
 
 export type ActionModalType =
     | { type: "flip-three"; sourcePlayerId: string }
+    | { type: "freeze"; sourcePlayerId: string }
     | { type: "second-chance-pass"; sourcePlayerId: string }
     | null;
 

@@ -29,6 +29,7 @@ export interface PlayerHand {
   score: number;
   status: PlayerStatus;
   hasSecondChance: boolean;
+  pendingFlipThree?: number; // Number of cards player is forced to draw
 }
 
 // Room document (rooms collection)
@@ -43,6 +44,7 @@ export interface Room {
   currentRound: number;
   targetScore: number; // default 200
   createdAt: number;
+  cumulativeScores?: Record<string, number>; // synced for all clients
 }
 
 // Round sub-document (rooms/{id}/rounds/{n})

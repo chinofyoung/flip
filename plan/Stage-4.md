@@ -67,3 +67,5 @@ Wire up all game phases: Playing → Round Summary → Game Over.
 - Second Chance → survives one bust
 - 7 unique numbers → Flip 7 bonus (+15)
 - Player reaches 200+ pts → game over screen
+- Host can manually end the current round via "End Round" button
+- Player can leave the game and rejoin via room code, picking up their score

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Loader2, Hand, Square, ChevronUp, ChevronDown } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { hapticMedium, hapticHeavy } from "@/lib/haptics";
 import { AuthGuard } from "@/components/AuthGuard";
 import RoomHeader from "@/components/game/RoomHeader";
 import CardPicker from "@/components/game/CardPicker";
@@ -26,9 +27,11 @@ import {
   addCardToHand,
   removeCardFromHand,
   playerStay,
-  applyFlipThree,
+  triggerFlipThree,
+  applyFreezeToPlayer,
   passSecondChance,
   checkAndEndRound,
+  forceEndRound,
   endRoundAndAdvance,
   subscribeToRound,
   saveGameResult,
@@ -153,28 +156,37 @@ function RoomContent() {
       const previousRoom = useGameStore.getState().room;
       setRoom(updatedRoom);
 
-      // Game just started — initialize round
+      // Sync cumulative scores from room document (all clients)
+      if (updatedRoom.cumulativeScores) {
+        setCumulativeScores(updatedRoom.cumulativeScores);
+      }
+
+      // Game just started — only host initializes round (avoids race)
       if (
         updatedRoom.status === "playing" &&
         previousRoom?.status === "waiting"
       ) {
         toast.success("Game starting!");
-        const playerUids = updatedRoom.players.map((p) => p.uid);
-        initializeRound(updatedRoom.id, 1, playerUids).catch(console.error);
+        if (updatedRoom.hostId === user?.uid) {
+          const playerUids = updatedRoom.players.map((p) => p.uid);
+          initializeRound(updatedRoom.id, 1, playerUids).catch(console.error);
+        }
       }
 
-      // New round started by host advancing
+      // New round started by host advancing — only host initializes
       if (
         updatedRoom.status === "playing" &&
         previousRoom?.status === "playing" &&
         updatedRoom.currentRound > (previousRoom?.currentRound || 0)
       ) {
-        const playerUids = updatedRoom.players.map((p) => p.uid);
-        initializeRound(
-          updatedRoom.id,
-          updatedRoom.currentRound,
-          playerUids
-        ).catch(console.error);
+        if (updatedRoom.hostId === user?.uid) {
+          const playerUids = updatedRoom.players.map((p) => p.uid);
+          initializeRound(
+            updatedRoom.id,
+            updatedRoom.currentRound,
+            playerUids
+          ).catch(console.error);
+        }
         setGamePhase("playing");
       }
     });
@@ -220,19 +232,10 @@ function RoomContent() {
 
         if (result.actionRequired === "flip-three") {
           showActionModal({ type: "flip-three", sourcePlayerId: user.uid });
-        }
-
-        // Check if player has second chance and already has one → must pass it
-        const updatedRound = useGameStore.getState().round;
-        const updatedHand = updatedRound?.playerHands[user.uid];
-        if (
-          card.type === "action" &&
-          card.value === "second-chance" &&
-          updatedHand?.hasSecondChance
-        ) {
-          // Player already had Second Chance before this card, need to pass
-          // The resolveCardDraw already applied it; if they had one before,
-          // we show a pass modal
+        } else if (result.actionRequired === "freeze") {
+          showActionModal({ type: "freeze", sourcePlayerId: user.uid });
+        } else if (result.actionRequired === "second-chance-pass") {
+          showActionModal({ type: "second-chance-pass", sourcePlayerId: user.uid });
         }
 
         // Check if round should end
@@ -273,6 +276,7 @@ function RoomContent() {
     setIsProcessing(true);
     try {
       await playerStay(room.id, room.currentRound, user.uid);
+      hapticMedium();
       toast.success("You stayed!");
       await checkAndEndRound(room.id, room.currentRound);
     } catch (err) {
@@ -288,10 +292,51 @@ function RoomContent() {
     async (targetPlayerId: string) => {
       if (!room || !user) return;
       hideActionModal();
-      toast.info(
-        `Flip Three applied to ${room.players.find((p) => p.uid === targetPlayerId)?.displayName
-        }! They need to draw 3 cards.`
-      );
+
+      try {
+        await triggerFlipThree(
+          room.id,
+          room.currentRound,
+          user.uid,
+          targetPlayerId
+        );
+        const targetName = room.players.find((p) => p.uid === targetPlayerId)?.displayName;
+        toast.info(
+          targetPlayerId === user.uid
+            ? "You have to draw 3 cards!"
+            : `Flip Three applied to ${targetName}!`
+        );
+      } catch (err) {
+        console.error("Error triggering Flip Three:", err);
+        toast.error("Failed to apply Flip Three");
+      }
+    },
+    [room, user, hideActionModal]
+  );
+
+  const handleFreezeTarget = useCallback(
+    async (targetPlayerId: string) => {
+      if (!room || !user) return;
+      hideActionModal();
+
+      try {
+        await applyFreezeToPlayer(
+          room.id,
+          room.currentRound,
+          user.uid,
+          targetPlayerId
+        );
+        const targetName = room.players.find((p) => p.uid === targetPlayerId)?.displayName;
+        toast.success(
+          targetPlayerId === user.uid
+            ? "You froze yourself!"
+            : `Froze ${targetName}!`
+        );
+        await checkAndEndRound(room.id, room.currentRound);
+      } catch (err) {
+        console.error("Error applying freeze:", err);
+        toast.error("Failed to apply freeze");
+      }
     },
     [room, user, hideActionModal]
   );
@@ -302,10 +347,17 @@ function RoomContent() {
       hideActionModal();
 
       try {
-        await passSecondChance(room.id, room.currentRound, targetPlayerId);
+        await passSecondChance(
+          room.id,
+          room.currentRound,
+          user.uid,
+          targetPlayerId
+        );
+        const targetName = room.players.find((p) => p.uid === targetPlayerId)?.displayName;
         toast.success(
-          `Second Chance passed to ${room.players.find((p) => p.uid === targetPlayerId)?.displayName
-          }`
+          targetPlayerId === user.uid
+            ? "Second Chance applied to yourself!"
+            : `Second Chance passed to ${targetName}`
         );
       } catch (err) {
         console.error("Error passing second chance:", err);
@@ -382,9 +434,33 @@ function RoomContent() {
     }
   };
 
+  // --- Force end round (host only) ---
+  const handleEndRound = async () => {
+    if (!room || !user || !isHost) return;
+
+    if (!confirm("Are you sure you want to end this round for everyone?")) return;
+
+    try {
+      await forceEndRound(room.id, room.currentRound);
+      toast.success("Round ended by host");
+    } catch (err) {
+      console.error("Error ending round:", err);
+      toast.error("Failed to end round");
+    }
+  };
+
   // --- Leave room ---
   const handleLeaveRoom = async () => {
     if (!room || !user) return;
+
+    const isPlaying = room.status !== "waiting";
+
+    if (isPlaying) {
+      if (!confirm("Leave the game? You can return later using the room code.")) return;
+      reset();
+      router.push("/");
+      return;
+    }
 
     try {
       setIsLeaving(true);
@@ -467,7 +543,11 @@ function RoomContent() {
   if (gamePhase === "round-end" && round) {
     return (
       <div className="min-h-screen bg-background">
-        <RoomHeader code={code} playerCount={room.players.length} />
+        <RoomHeader
+          code={code}
+          playerCount={room.players.length}
+          onLeave={handleLeaveRoom}
+        />
         <div className="max-w-lg mx-auto px-4 py-8">
           <RoundSummary
             room={room}
@@ -486,7 +566,12 @@ function RoomContent() {
   if (room.status === "playing" && gamePhase === "playing") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <RoomHeader code={code} playerCount={room.players.length} />
+        <RoomHeader
+          code={code}
+          playerCount={room.players.length}
+          onEndRound={isHost ? handleEndRound : undefined}
+          onLeave={handleLeaveRoom}
+        />
 
         <div className="flex-1 flex flex-col max-w-lg mx-auto w-full px-4 py-4 gap-4 overflow-hidden">
           {/* Scoreboard */}
@@ -520,17 +605,34 @@ function RoomContent() {
 
             {/* Hit / Stay buttons */}
             {isMyTurnActive && (
-              <div className="flex gap-3 mt-4">
-                <motion.button
-                  type="button"
-                  onClick={handleStay}
-                  disabled={isProcessing || (myHand?.cards.length || 0) === 0}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 py-3 bg-emerald/20 text-emerald font-semibold rounded-lg border border-emerald/30 hover:bg-emerald/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <Square className="w-4 h-4" />
-                  Stay
-                </motion.button>
+              <div className="space-y-3 mt-4">
+                {(myHand?.pendingFlipThree || 0) > 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+                      <span className="text-sm font-medium text-red-400">
+                        Must draw {myHand?.pendingFlipThree} more cards
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+
+                <div className="flex gap-3">
+                  <motion.button
+                    type="button"
+                    onClick={handleStay}
+                    disabled={isProcessing || (myHand?.cards.length || 0) === 0 || (myHand?.pendingFlipThree || 0) > 0}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex-1 py-3 bg-emerald/20 text-emerald font-semibold rounded-lg border border-emerald/30 hover:bg-emerald/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Square className="w-4 h-4" />
+                    Stay
+                  </motion.button>
+                </div>
               </div>
             )}
           </div>
@@ -546,7 +648,7 @@ function RoomContent() {
                 <div className="flex items-center gap-2">
                   <Hand className="w-4 h-4 text-gold" />
                   <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                    Draw Card
+                    {(myHand?.pendingFlipThree || 0) > 0 ? "Forced Draw" : "Draw Card"}
                   </span>
                 </div>
                 {isCardPickerOpen ? (
@@ -633,14 +735,11 @@ function RoomContent() {
             onSelectPlayer={
               actionModal.type === "flip-three"
                 ? handleFlipThreeTarget
-                : handleSecondChancePass
+                : actionModal.type === "freeze"
+                  ? handleFreezeTarget
+                  : handleSecondChancePass
             }
             onCancel={hideActionModal}
-            onSelf={
-              actionModal.type === "flip-three"
-                ? () => handleFlipThreeTarget(user?.uid || "")
-                : undefined
-            }
           />
         )}
       </div>
@@ -650,7 +749,11 @@ function RoomContent() {
   // --- Lobby (waiting) ---
   return (
     <div className="min-h-screen bg-background">
-      <RoomHeader code={code} playerCount={room.players.length} />
+      <RoomHeader
+        code={code}
+        playerCount={room.players.length}
+        onLeave={handleLeaveRoom}
+      />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="bg-surface rounded-xl border border-muted/20 p-8">

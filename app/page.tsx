@@ -23,6 +23,16 @@ function HomeContent() {
   const [showJoinInput, setShowJoinInput] = useState(false);
   const [roomCode, setRoomCode] = useState("");
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Failed to sign out. Please try again.");
+    }
+  };
+
   const handleCreateRoom = async () => {
     if (!user) return;
 
@@ -59,7 +69,10 @@ function HomeContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-4">
+    <div className="min-h-dvh bg-background flex flex-col p-4 relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full bg-emerald/3 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/3 right-1/4 w-[250px] h-[250px] rounded-full bg-gold/3 blur-[100px] pointer-events-none" />
       {/* Top bar */}
       <div className="w-full max-w-4xl mx-auto flex items-center justify-between mb-8">
         <p className="text-muted text-sm">
@@ -67,7 +80,7 @@ function HomeContent() {
         </p>
         <button
           type="button"
-          onClick={signOut}
+          onClick={handleSignOut}
           className="px-4 py-1.5 text-xs border border-muted/30 rounded-lg text-foreground hover:bg-surface transition-colors"
         >
           Sign Out
@@ -86,11 +99,17 @@ function HomeContent() {
           <h1 className="text-5xl font-bold tracking-tight text-foreground">
             FLIP
           </h1>
-          <span className="text-7xl font-bold text-gold">7</span>
+          <motion.span
+            className="text-7xl font-bold text-gold"
+            animate={{ rotate: [0, -3, 3, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 5 }}
+          >
+            7
+          </motion.span>
         </motion.div>
 
         {/* Action buttons */}
-        <div className="w-full max-w-sm space-y-4">
+        <div className="w-full max-w-sm space-y-3">
           {/* Create Room */}
           <motion.button
             type="button"
@@ -101,7 +120,7 @@ function HomeContent() {
             transition={{ delay: 0.1, duration: 0.4 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-4 bg-gold text-background font-semibold rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-gold text-background font-semibold rounded-xl hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed card-elevated"
           >
             {isCreatingRoom ? "Creating..." : "Create Room"}
           </motion.button>

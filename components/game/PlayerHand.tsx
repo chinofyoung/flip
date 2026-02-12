@@ -84,16 +84,16 @@ export default function PlayerHand({
                     {status !== "active" && (
                         <span
                             className={`px-2 py-1 rounded-full text-xs font-semibold ${status === "busted"
-                                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                                    : status === "stayed"
-                                        ? "bg-emerald/20 text-emerald border border-emerald/30"
-                                        : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                : status === "stayed"
+                                    ? "bg-emerald/20 text-emerald border border-emerald/30"
+                                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                                 }`}
                         >
                             {status === "busted"
                                 ? "BUST"
                                 : status === "stayed"
-                                    ? "STAYED"
+                                    ? "LOCKED IN"
                                     : "FROZEN"}
                         </span>
                     )}

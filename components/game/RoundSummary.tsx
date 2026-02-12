@@ -66,10 +66,10 @@ export default function RoundSummary({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className={`flex items-center gap-3 p-4 rounded-xl border ${hand?.status === "busted"
-                                ? "bg-red-500/5 border-red-500/20"
-                                : index === 0 && roundScore > 0
-                                    ? "bg-gold/5 border-gold/20"
-                                    : "bg-surface border-muted/10"
+                            ? "bg-red-500/5 border-red-500/20"
+                            : index === 0 && roundScore > 0
+                                ? "bg-gold/5 border-gold/20"
+                                : "bg-surface border-muted/10"
                             }`}
                     >
                         {/* Rank */}
@@ -96,7 +96,7 @@ export default function RoundSummary({
                                 {hand?.cards.length || 0} cards drawn
                                 {hand?.status === "busted" && " · Busted!"}
                                 {hand?.status === "frozen" && " · Frozen"}
-                                {hand?.status === "stayed" && " · Stayed"}
+                                {hand?.status === "stayed" && " · Locked In"}
                             </span>
                         </div>
 
@@ -104,10 +104,10 @@ export default function RoundSummary({
                         <div className="text-right shrink-0">
                             <div
                                 className={`text-lg font-bold font-mono ${hand?.status === "busted"
-                                        ? "text-red-400"
-                                        : roundScore > 0
-                                            ? "text-emerald"
-                                            : "text-muted"
+                                    ? "text-red-400"
+                                    : roundScore > 0
+                                        ? "text-emerald"
+                                        : "text-muted"
                                     }`}
                             >
                                 {hand?.status === "busted" ? "0" : `+${roundScore}`}

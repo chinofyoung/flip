@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Loader2, Hand, Square, ChevronUp, ChevronDown } from "lucide-react";
+import { Crown, Loader2, Hand, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { hapticMedium, hapticHeavy } from "@/lib/haptics";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -277,11 +277,11 @@ function RoomContent() {
     try {
       await playerStay(room.id, room.currentRound, user.uid);
       hapticMedium();
-      toast.success("You stayed!");
+      toast.success("Locked in!");
       await checkAndEndRound(room.id, room.currentRound);
     } catch (err) {
-      console.error("Error staying:", err);
-      toast.error("Failed to stay");
+      console.error("Error locking in:", err);
+      toast.error("Failed to lock in");
     } finally {
       setIsProcessing(false);
     }
@@ -629,8 +629,8 @@ function RoomContent() {
                     whileTap={{ scale: 0.95 }}
                     className="flex-1 py-3 bg-emerald/20 text-emerald font-semibold rounded-lg border border-emerald/30 hover:bg-emerald/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <Square className="w-4 h-4" />
-                    Stay
+                    <Lock className="w-4 h-4" />
+                    Lock In
                   </motion.button>
                 </div>
               </div>
